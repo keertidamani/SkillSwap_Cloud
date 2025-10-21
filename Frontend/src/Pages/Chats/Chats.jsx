@@ -43,7 +43,8 @@ const Chats = () => {
 
   const [scheduleForm, setScheduleForm] = useState({
     date: "",
-    time: "",
+  time: "",
+  meetLink: "",
   });
 
   // Set axios defaults for authentication
@@ -731,6 +732,21 @@ const Chats = () => {
                 />
               </Form.Group>
 
+              <Form.Group controlId="formMeetLink" style={{ marginBottom: "30px" }}>
+                <Form.Label>Google Meet Link (optional)</Form.Label>
+                <Form.Control
+                  type="text"
+                  placeholder="https://meet.google.com/xxx-xxxx-xxx"
+                  value={scheduleForm.meetLink}
+                  onChange={(e) => setScheduleForm({ ...scheduleForm, meetLink: e.target.value })}
+                  style={{
+                    backgroundColor: "#3a3a3a",
+                    borderColor: "#3bb4a1",
+                    color: "white"
+                  }}
+                />
+              </Form.Group>
+
               <div style={{ display: "flex", justifyContent: "center", gap: "15px" }}>
                 <Button
                   variant="success"
@@ -742,9 +758,18 @@ const Chats = () => {
                       return;
                     }
 
+                    // Validate Google Meet link if provided
+                    if (scheduleForm.meetLink && scheduleForm.meetLink.trim() !== "") {
+                      const meetRegex = /^https?:\/\/(meet\.google\.com)\/[A-Za-z0-9-]+(\/.*)?$/;
+                      if (!meetRegex.test(scheduleForm.meetLink.trim())) {
+                        toast.error("Please enter a valid Google Meet link (e.g. https://meet.google.com/xxx-xxxx-xxx)");
+                        return;
+                      }
+                    }
+
                     const requestData = {
                       ...scheduleForm,
-                      username: selectedChat.username
+                      username: selectedChat.username,
                     };
 
                     try {
@@ -753,6 +778,7 @@ const Chats = () => {
                       setScheduleForm({
                         date: "",
                         time: "",
+                        meetLink: "",
                       });
                       setScheduleModalShow(false);
                     } catch (error) {
@@ -773,7 +799,7 @@ const Chats = () => {
                   style={{
                     backgroundColor: "#3bb4a1",
                     borderColor: "#3bb4a1",
-                    padding: "10px 25px"
+                    padding: "10px 25px",
                   }}
                 >
                   Submit

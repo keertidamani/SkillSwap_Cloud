@@ -37,7 +37,7 @@ const Login = () => {
   };
 
   const subtitleStyle = {
-    fontSize: "16px",
+    fontSize: "12px",
     color: "#555",
     marginBottom: "30px",
     fontFamily: "Montserrat, sans-serif",

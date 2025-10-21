@@ -13,12 +13,13 @@ const transporter = nodemailer.createTransport({
   },
 });
 
-const sendMail = async (to, subject, Message) => {
+const sendMail = async (to, subject, Message, attachments = []) => {
   const mailOptions = {
     from: process.env.EMAIL_ID,
     to: [to],
     subject: subject,
     html: Message,
+    attachments,
   };
 
   try {

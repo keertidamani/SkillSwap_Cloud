@@ -1,17 +1,69 @@
 .content1-container {
   display: flex;
   flex-direction: row;
-  align-items: start;
-  background-color: #2d2d2d;
+  align-items: center;
+  justify-content: center;
+  background-color: #f9fafb; /* Light background to match homepage */
+  padding: 60px 40px;
+  gap: 50px;
+}
+
+.content1-text {
+  max-width: 550px;
+  display: flex;
+  flex-direction: column;
   justify-content: center;
 }
 
-@media (max-width: 780px) {
+.content1-title {
+  font-family: "Oswald", sans-serif;
+  font-size: 3rem;
+  font-weight: bold;
+  color: #0f172a; /* Dark navy like homepage heading */
+  margin-bottom: 20px;
+}
+
+.content1-description {
+  font-family: "Montserrat", sans-serif;
+  font-size: 1.1rem;
+  line-height: 1.8;
+  color: #475569; /* Soft gray for readability */
+  margin-bottom: 20px;
+}
+
+.content1-image img {
+  max-width: 250px;
+  height: auto;
+  border-radius: 20px; /* Matches rounded style */
+  box-shadow: 0 8px 24px rgba(4, 4, 4, 0.15);
+  transition: transform 0.3s ease;
+}
+
+.content1-image img:hover {
+  transform: scale(1.05);
+}
+
+/* Responsive Design */
+@media (max-width: 900px) {
   .content1-container {
-    display: flex;
     flex-direction: column-reverse;
-    justify-content: center;
-    align-items: center;
-    text-align: center !important;
+    text-align: center;
+    padding: 40px 20px;
+  }
+
+  .content1-text {
+    max-width: 90%;
+  }
+
+  .content1-title {
+    font-size: 2.5rem;
+  }
+
+  .content1-description {
+    font-size: 1rem;
+  }
+
+  .content1-image img {
+    max-width: 80%;
   }
 }

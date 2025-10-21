@@ -595,7 +595,7 @@ export const discoverUsers = asyncHandler(async (req, res) => {
 export const sendScheduleMeet = asyncHandler(async (req, res) => {
   console.log("******** Inside sendScheduleMeet Function *******");
 
-  const { date, time, username } = req.body;
+  const { date, time, username, meetLink } = req.body;
   if (!date || !time || !username) {
     throw new ApiError(400, "Please provide all the details");
   }
@@ -608,9 +608,57 @@ export const sendScheduleMeet = asyncHandler(async (req, res) => {
 
   const to = user.email;
   const subject = "Request for Scheduling a meeting";
-  const message = `${req.user.name} has requested for a meet at ${time} time on ${date} date. Please respond to the request.`;
+  // Basic validation for Google Meet link (if provided)
+  if (meetLink && meetLink.trim() !== "") {
+    const meetRegex = /^https?:\/\/(meet\.google\.com)\/[A-Za-z0-9-]+(\/.*)?$/;
+    if (!meetRegex.test(meetLink.trim())) {
+      throw new ApiError(400, "Invalid Google Meet link");
+    }
+  }
 
-  await sendMail(to, subject, message);
+  // Build HTML email body
+  let htmlMessage = `<p>${req.user.name} has requested a meeting at <strong>${time}</strong> on <strong>${date}</strong>.</p>`;
+  if (meetLink && meetLink.trim() !== "") {
+    const safeLink = meetLink.trim();
+    htmlMessage += `<p>Join the meeting: <a href="${safeLink}" target="_blank" rel="noopener noreferrer">${safeLink}</a></p>`;
+  }
+  htmlMessage += `<p>Please respond to the request.</p>`;
+
+  // Create simple iCal event (UTC naive) if meetLink provided
+  const attachments = [];
+  if (meetLink && meetLink.trim() !== "") {
+    // Create a UID and timestamps
+    const uid = `${Date.now()}@skillswap.local`;
+    // Convert date/time to ISO strings (no timezone conversion to keep simple)
+    const start = new Date(`${date}T${time}:00`);
+    const end = new Date(start.getTime() + 60 * 60 * 1000); // default 1 hour
+
+    const toICSDate = (d) => {
+      return d.toISOString().replace(/[-:]/g, '').split('.')[0] + 'Z';
+    };
+
+    const ics = [
+      'BEGIN:VCALENDAR',
+      'VERSION:2.0',
+      'PRODID:-//SkillSwap//EN',
+      'CALSCALE:GREGORIAN',
+      'METHOD:REQUEST',
+      'BEGIN:VEVENT',
+      `UID:${uid}`,
+      `DTSTAMP:${toICSDate(new Date())}`,
+      `DTSTART:${toICSDate(start)}`,
+      `DTEND:${toICSDate(end)}`,
+      `SUMMARY:SkillSwap Meeting with ${req.user.name}`,
+      `DESCRIPTION:Meeting scheduled via SkillSwap. Join: ${meetLink.trim()}`,
+      `LOCATION:${meetLink.trim()}`,
+      'END:VEVENT',
+      'END:VCALENDAR',
+    ].join('\r\n');
+
+    attachments.push({ filename: 'invite.ics', content: ics });
+  }
+
+  await sendMail(to, subject, htmlMessage, attachments);
 
   return res.status(200).json(new ApiResponse(200, null, "Email sent successfully"));
 });
