@@ -23,6 +23,7 @@ const Chats = () => {
 
   const [scheduleModalShow, setScheduleModalShow] = useState(false);
   const [requestModalShow, setRequestModalShow] = useState(false);
+  const [unreadMessages, setUnreadMessages] = useState({});
 
   // to store selected chat
   const [selectedChat, setSelectedChat] = useState(null);
@@ -74,20 +75,32 @@ const Chats = () => {
   }, [user]);
 
   useEffect(() => {
-    socket = io(axios.defaults.baseURL);
-    if (user) {
-      socket.emit("setup", user);
+  if (user || localStorage.getItem("userInfo")) {
+    getRequests();
+  }
+}, [user]);
+
+  useEffect(() => {
+  socket = io(axios.defaults.baseURL);
+  if (user) {
+    socket.emit("setup", user);
+  }
+  socket.on("message recieved", (newMessageRecieved) => {
+    console.log("New Message Recieved: ", newMessageRecieved);
+    if (selectedChat && selectedChat.id === newMessageRecieved.chatId._id) {
+      setChatMessages((prevState) => [...prevState, newMessageRecieved]);
+    } else {
+      // Increment unread count for this chat
+      setUnreadMessages((prev) => ({
+        ...prev,
+        [newMessageRecieved.chatId._id]: (prev[newMessageRecieved.chatId._id] || 0) + 1
+      }));
     }
-    socket.on("message recieved", (newMessageRecieved) => {
-      console.log("New Message Recieved: ", newMessageRecieved);
-      if (selectedChat && selectedChat.id === newMessageRecieved.chatId._id) {
-        setChatMessages((prevState) => [...prevState, newMessageRecieved]);
-      }
-    });
-    return () => {
-      socket.off("message recieved");
-    };
-  }, [selectedChat, user]);
+  });
+  return () => {
+    socket.off("message recieved");
+  };
+}, [selectedChat, user]);
 
   const fetchChats = async () => {
     try {
@@ -144,33 +157,39 @@ const Chats = () => {
   };
 
   const handleChatClick = async (chatId) => {
-    try {
-      setChatMessageLoading(true);
-      // Use relative URL
-      const { data } = await axios.get(`/message/getMessages/${chatId}`);
-      setChatMessages(data.data || []);
-      setMessage("");
-      
-      const chatDetails = chats.find((chat) => chat.id === chatId);
-      setSelectedChat(chatDetails);
-      
-      socket.emit("join chat", chatId);
-      toast.success(data.message || "Chat loaded");
-    } catch (err) {
-      console.error("Chat click error:", err);
-      if (err?.response?.status === 401 || err?.response?.status === 403) {
-        toast.error("Please login again");
-        localStorage.removeItem("userInfo");
-        localStorage.removeItem("token");
-        setUser(null);
-        navigate("/login");
-      } else {
-        toast.error("Failed to load chat messages");
-      }
-    } finally {
-      setChatMessageLoading(false);
+  try {
+    setChatMessageLoading(true);
+    const { data } = await axios.get(`/message/getMessages/${chatId}`);
+    setChatMessages(data.data || []);
+    setMessage("");
+    
+    const chatDetails = chats.find((chat) => chat.id === chatId);
+    setSelectedChat(chatDetails);
+    
+    // Clear unread count for this chat
+    setUnreadMessages((prev) => {
+      const newUnread = { ...prev };
+      delete newUnread[chatId];
+      return newUnread;
+    });
+    
+    socket.emit("join chat", chatId);
+    toast.success(data.message || "Chat loaded");
+  } catch (err) {
+    console.error("Chat click error:", err);
+    if (err?.response?.status === 401 || err?.response?.status === 403) {
+      toast.error("Please login again");
+      localStorage.removeItem("userInfo");
+      localStorage.removeItem("token");
+      setUser(null);
+      navigate("/login");
+    } else {
+      toast.error("Failed to load chat messages");
     }
-  };
+  } finally {
+    setChatMessageLoading(false);
+  }
+};
 
   const sendMessage = async (e) => {
     e?.preventDefault();
@@ -339,24 +358,29 @@ const Chats = () => {
               Chat History
             </Button>
             <Button
-              className="requestButton"
-              variant="secondary"
-              style={{
-                borderTop: showRequests ? "1px solid lightgrey" : "1px solid lightgrey",
-                borderRight: showRequests ? "1px solid lightgrey" : "1px solid lightgrey",
-                borderLeft: showRequests ? "1px solid lightgrey" : "1px solid lightgrey",
-                borderBottom: "none",
-                backgroundColor: showChatHistory ? "#2d2d2d" : "#3bb4a1",
-                color: showChatHistory ? "white" : "black",
-                cursor: "pointer",
-                minWidth: "150px",
-                padding: "10px",
-                borderRadius: "5px 5px 0 0",
-              }}
-              onClick={() => handleTabClick("requests")}
-            >
-              Requests
-            </Button>
+  className="requestButton"
+  variant="secondary"
+  style={{
+    borderTop: showRequests ? "1px solid lightgrey" : "1px solid lightgrey",
+    borderRight: showRequests ? "1px solid lightgrey" : "1px solid lightgrey",
+    borderLeft: showRequests ? "1px solid lightgrey" : "1px solid lightgrey",
+    borderBottom: "none",
+    backgroundColor: showChatHistory ? "#2d2d2d" : "#3bb4a1",
+    color: showChatHistory ? "white" : "black",
+    cursor: "pointer",
+    minWidth: "150px",
+    padding: "10px",
+    borderRadius: "5px 5px 0 0",
+    position: "relative",
+  }}
+  onClick={() => handleTabClick("requests")}
+>
+  Requests
+  {requests.length > 0 && (
+    <span className="tab-badge">{requests.length}</span>
+  )}
+</Button>
+
           </div>
 
           {/* Chat History or Requests List */}
@@ -370,27 +394,35 @@ const Chats = () => {
                 ) : (
                   <>
                     {chats && chats.length > 0 ? (
-                      chats.map((chat) => (
-                        <ListGroup.Item
-                          key={chat.id}
-                          onClick={() => handleChatClick(chat.id)}
-                          style={{
-                            cursor: "pointer",
-                            marginBottom: "10px",
-                            padding: "10px",
-                            backgroundColor: selectedChat?.id === chat?.id ? "#3BB4A1" : "lightgrey",
-                            borderRadius: "5px",
-                            color: selectedChat?.id === chat?.id ? "white" : "black",
-                          }}
-                        >
-                          {chat.name}
-                        </ListGroup.Item>
-                      ))
-                    ) : (
-                      <div className="text-center mt-4">
-                        <p style={{color: "white"}}>No chats available</p>
-                      </div>
-                    )}
+  chats.map((chat) => (
+    <ListGroup.Item
+      key={chat.id}
+      onClick={() => handleChatClick(chat.id)}
+      style={{
+        cursor: "pointer",
+        marginBottom: "10px",
+        padding: "10px 15px",
+        backgroundColor: selectedChat?.id === chat?.id ? "#3BB4A1" : "lightgrey",
+        borderRadius: "5px",
+        color: selectedChat?.id === chat?.id ? "white" : "black",
+        display: "flex",
+        justifyContent: "space-between",
+        alignItems: "center",
+      }}
+    >
+      <span style={{ flex: 1 }}>{chat.name}</span>
+      {unreadMessages[chat.id] > 0 && (
+        <span className="unread-badge">
+          {unreadMessages[chat.id]}
+        </span>
+      )}
+    </ListGroup.Item>
+  ))
+) : (
+  <div className="text-center mt-4">
+    <p style={{color: "white"}}>No chats available</p>
+  </div>
+)}
                   </>
                 )}
               </ListGroup>

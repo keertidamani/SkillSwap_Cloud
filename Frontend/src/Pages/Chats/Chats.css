@@ -287,3 +287,63 @@
     padding: 15px;
   }
 }
+
+/* Unread message badge */
+.unread-badge {
+  background: linear-gradient(45deg, #ff4757, #ff6348);
+  color: white;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 4px 10px;
+  border-radius: 20px;
+  min-width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
+  animation: pulse 2s infinite;
+  font-family: var(--secfont);
+}
+
+@keyframes pulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 2px 8px rgba(255, 71, 87, 0.4);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 4px 12px rgba(255, 71, 87, 0.6);
+  }
+}
+
+.list-group-item {
+  position: relative;
+}
+
+.unread-badge:hover {
+  transform: scale(1.1);
+}
+
+/* Tab notification badge */
+.tab-badge {
+  position: absolute;
+  top: -8px;
+  right: -8px;
+  background: linear-gradient(45deg, #ff4757, #ff6348);
+  color: white;
+  font-size: 12px;
+  font-weight: 700;
+  padding: 4px 8px;
+  border-radius: 50%;
+  min-width: 24px;
+  height: 24px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 10px rgba(255, 71, 87, 0.5);
+  animation: pulse 2s infinite;
+  font-family: var(--secfont);
+  border: 2px solid white;
+  z-index: 10;
+}

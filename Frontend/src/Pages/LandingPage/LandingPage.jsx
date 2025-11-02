@@ -31,7 +31,7 @@ const LandingPage = () => {
           </div>
           <div className="card-surface" style={{ padding: 20 }}>
             <h3 style={{ margin: 0 }}>Share</h3>
-            <p className="hero-subtitle">Teach skills you’re confident in and build your profile.</p>
+            <p className="hero-subtitle">Teach your skills and build your profile.</p>
           </div>
           <div className="card-surface" style={{ padding: 20 }}>
             <h3 style={{ margin: 0 }}>Connect</h3>
